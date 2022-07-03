@@ -19,7 +19,7 @@ At the current stage, supported backend are:
 - [SFTP](https://en.wikipedia.org/wiki/SSH_File_Transfer_Protocol) through [afero's sftpfs](https://github.com/spf13/afero/)
 - Email through [go-mail](https://github.com/go-mail/mail) thanks to [@x-way](https://github.com/x-way)
 
-And with those are supported common parameters to switch them to read-only, enable logging access, or use a temporary directory file (see [doc](https://github.com/fclairamb/ftpserver/tree/master/fs)).
+And with those are supported common parameters to switch them to read-only, enable login access, or use a temporary directory file (see [doc](https://github.com/fclairamb/ftpserver/tree/master/fs)).
 
 ## Current status of the project
 
@@ -45,6 +45,7 @@ These features are brought by [ftpserverlib](https://github.com/fclairamb/ftpser
    * [AUTH](https://tools.ietf.org/html/rfc2228#page-6) - Control session protection
    * [AUTH TLS](https://tools.ietf.org/html/rfc4217#section-4.1) - TLS session
    * [PROT](https://tools.ietf.org/html/rfc2228#page-8) - Transfer protection
+   * [EPRT/EPSV](https://tools.ietf.org/html/rfc2428) - IPv6 support
    * [MDTM](https://tools.ietf.org/html/rfc3659#page-8) - File Modification Time
    * [SIZE](https://tools.ietf.org/html/rfc3659#page-11) - Size of a file
    * [REST](https://tools.ietf.org/html/rfc3659#page-13) - Restart of interrupted transfer
@@ -58,30 +59,23 @@ These features are brought by [ftpserverlib](https://github.com/fclairamb/ftpser
 #### Download it
 Fetch a binary from the [latest release](/releases) and run it.
 
-#### Build it
+#### Build & run it locally
 
 ```bash
 go install github.com/fclairamb/ftpserver@main
+
+ftpserver &
 ```
 
 #### Run it with docker
 There's also a containerized version of the server (31MB, based on alpine).
 
 ```sh
+# Creating a directory
+mkdir -p files
+
 # Starting the sample FTP server
-docker run --rm -d -p 2121-2130:2121-2130 -v ./ftpserver/files:/tmp -v ./ftpserver:/app fclairamb/ftpserver
-
-# Download some file
-[ -f kitty.jpg ] || (curl -o kitty.jpg.tmp https://placekitten.com/2048/2048 && mv kitty.jpg.tmp kitty.jpg)
-
-# Upload it
-curl -v -T kitty.jpg ftp://test:test@localhost:2121/
-
-# Download it back
-curl ftp://test:test@localhost:2121/kitty.jpg -o kitty2.jpg
-
-# Compare it
-diff kitty.jpg kitty2.jpg
+docker run --rm -d -p 2121-2130:2121-2130 -v $(pwd)/files:/tmp -v $(pwd):/app fclairamb/ftpserver
 ```
 
 #### Run it with docker compose
@@ -94,8 +88,8 @@ services:
     ports:
       - '2121-2130:2121-2130'
     volumes:
-      - ./ftpserver/files:/tmp
-      - ./ftpserver:/app
+      - ./files:/tmp
+      - .:/app
     image: fclairamb/ftpserver
 ```
 
@@ -169,7 +163,8 @@ Here is a sample config file:
          "fs": "gdrive",
          "params": {
             "google_client_id": "***.apps.googleusercontent.com",
-            "google_client_secret": "****"
+            "google_client_secret": "****",
+            "base_path": "ftp"
          }
       },
       {
